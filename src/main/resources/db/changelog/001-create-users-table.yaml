@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-users-table
+      author: Vadim
+
+      changes:
+
+        - createTable:
+            tableName: users
+            columns:
+
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: name
+                  type: varchar(255)
+
+              - column:
+                  name: surname
+                  type: varchar(255)
+
+              - column:
+                  name: birth_date
+                  type: date
+
+              - column:
+                  name: email
+                  type: varchar(255)
+
+              - column:
+                  name: active
+                  type: boolean
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_name
+            columns:
+              - column:
+                  name: name
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_surname
+            columns:
+              - column:
+                  name: surname

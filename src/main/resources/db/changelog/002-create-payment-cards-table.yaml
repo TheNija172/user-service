@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-payment-card-table
+      author: Vadim
+
+      changes:
+        - createTable:
+            tableName: payment_cards
+            columns:
+
+              - column:
+                  name: id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: user_id
+                  type: bigint
+
+              - column:
+                  name: number
+                  type: varchar(255)
+
+              - column:
+                  name: holder
+                  type: varchar(255)
+
+              - column:
+                  name: expiration_date
+                  type: date
+
+              - column:
+                  name: active
+                  type: boolean
+
+        - addForeignKeyConstraint:
+            constraintName: fk_payment_cards_user_id
+            baseTableName: payment_cards
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: cascade
+
+
+        - createIndex:
+            tableName: payment_cards
+            indexName: idx_cards_user_id
+            columns:
+              - column:
+                  name: user_id
