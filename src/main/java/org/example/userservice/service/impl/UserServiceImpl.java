@@ -18,6 +18,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 
+import java.util.ArrayList;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -29,6 +31,7 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto create(UserRequestDto requestDto) {
         User user = userMapper.toEntity(requestDto);
         User savedUser = userRepository.save(user);
+        savedUser.setCards(new ArrayList<>());
         return userMapper.toDto(savedUser);
     }
 

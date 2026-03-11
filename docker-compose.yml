@@ -19,5 +19,21 @@ services:
     ports:
       - "6379:6379"
 
+  user-service:
+    build: .
+    container_name: user-service-app
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/users_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres-data:
