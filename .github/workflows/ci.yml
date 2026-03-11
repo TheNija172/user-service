@@ -36,9 +36,5 @@ jobs:
       - name: Build and run tests
         run: ./mvnw clean verify
 
-      - name: SonarQube analysis
-        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
-        run: ./mvnw sonar:sonar -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
       - name: Build Docker image
         run: docker build -t user-service:latest .
