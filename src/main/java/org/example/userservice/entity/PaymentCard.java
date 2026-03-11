@@ -8,7 +8,6 @@ import java.time.LocalDate;
 @Entity
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "payment_cards")

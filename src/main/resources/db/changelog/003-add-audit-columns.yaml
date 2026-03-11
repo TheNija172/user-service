@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-audit-columns
+      author: Vadim
+
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+
+        - addColumn:
+            tableName: payment_cards
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
