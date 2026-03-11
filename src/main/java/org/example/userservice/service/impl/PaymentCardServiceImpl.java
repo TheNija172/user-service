@@ -15,7 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.cache.CacheManager;
 import java.util.List;
 
 @Service
@@ -25,6 +25,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     private final PaymentCardRepository paymentCardRepository;
     private final UserRepository userRepository;
     private final PaymentCardMapper paymentCardMapper;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional
@@ -41,6 +42,8 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         paymentCard.setUser(user);
 
         PaymentCard savedCard = paymentCardRepository.save(paymentCard);
+        evictUserCache(user.getId());
+
         return paymentCardMapper.toDto(savedCard);
     }
 
@@ -76,6 +79,8 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         PaymentCard paymentCard = paymentCardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
 
+        Long oldUserId = paymentCard.getUser().getId();
+
         User user = userRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + requestDto.getUserId()));
 
@@ -85,16 +90,25 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         paymentCard.setActive(requestDto.getActive());
         paymentCard.setUser(user);
 
+        evictUserCache(oldUserId);
+        evictUserCache(user.getId());
+
         return paymentCardMapper.toDto(paymentCard);
     }
 
     @Override
     @Transactional
     public void changeActiveStatus(Long id, Boolean active) {
-        if (!paymentCardRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Card not found with id: " + id);
-        }
+        PaymentCard paymentCard = paymentCardRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
 
         paymentCardRepository.updateActive(id, active);
+        evictUserCache(paymentCard.getUser().getId());
+    }
+
+    private void evictUserCache(Long userId) {
+        if (cacheManager.getCache("users") != null) {
+            cacheManager.getCache("users").evict(userId);
+        }
     }
 }

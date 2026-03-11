@@ -14,6 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +33,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "#id")
     public UserResponseDto getById(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findWithCardsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         return userMapper.toDto(user);
@@ -49,8 +54,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CachePut(value = "users", key = "#id")
     public UserResponseDto update(Long id, UserRequestDto requestDto) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findWithCardsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         user.setName(requestDto.getName());
@@ -64,6 +70,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public void changeActiveStatus(Long id, Boolean active) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found with id: " + id);
@@ -71,4 +78,6 @@ public class UserServiceImpl implements UserService {
 
         userRepository.updateActive(id, active);
     }
+
+
 }

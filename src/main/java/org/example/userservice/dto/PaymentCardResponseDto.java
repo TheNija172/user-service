@@ -2,11 +2,12 @@ package org.example.userservice.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 
 @Data
-public class PaymentCardResponseDto {
+public class PaymentCardResponseDto implements Serializable {
 
     private Long id;
     private String number;
