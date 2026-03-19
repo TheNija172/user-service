@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: replace-user-active-with-status
+      author: Vadim
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+
+        - sql:
+            sql: UPDATE users SET status = 'ACTIVE' WHERE active = true;
+
+        - sql:
+            sql: UPDATE users SET status = 'DELETED' WHERE active = false;
+
+        - dropColumn:
+            tableName: users
+            columnName: active

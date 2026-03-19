@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-create-users-table.yaml
+
+  - include:
+      file: db/changelog/002-create-payment-cards-table.yaml
+
+  - include:
+      file: db/changelog/003-add-audit-columns.yaml
+
+  - include:
+      file: db/changelog/004-replace-active-with-status.yaml
+
+  - include:
+      file: db/changelog/005-add-index-to-users-email.yaml
