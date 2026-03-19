@@ -3,6 +3,7 @@ package org.example.userservice.service.impl;
 import org.example.userservice.dto.UserRequestDto;
 import org.example.userservice.dto.UserResponseDto;
 import org.example.userservice.entity.User;
+import org.example.userservice.entity.UserStatus;
 import org.example.userservice.exception.ResourceNotFoundException;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.repository.UserRepository;
@@ -28,10 +29,14 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
+    @Transactional
     public UserResponseDto create(UserRequestDto requestDto) {
         User user = userMapper.toEntity(requestDto);
+        user.setStatus(UserStatus.ACTIVE);
+
         User savedUser = userRepository.save(user);
         savedUser.setCards(new ArrayList<>());
+
         return userMapper.toDto(savedUser);
     }
 
@@ -42,13 +47,18 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findWithCardsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+
         return userMapper.toDto(user);
     }
 
     @Override
     public Page<UserResponseDto> getAll(String name, String surname, Pageable pageable) {
         Specification<User> specification = Specification
-                .where(UserSpecification.hasName(name))
+                .where(UserSpecification.hasStatus(UserStatus.ACTIVE))
+                .and(UserSpecification.hasName(name))
                 .and(UserSpecification.hasSurname(surname));
 
         return userRepository.findAll(specification, pageable)
@@ -66,7 +76,7 @@ public class UserServiceImpl implements UserService {
         user.setSurname(requestDto.getSurname());
         user.setBirthDate(requestDto.getBirthDate());
         user.setEmail(requestDto.getEmail());
-        user.setActive(requestDto.getActive());
+        user.setStatus(requestDto.getStatus());
 
         return userMapper.toDto(user);
     }
@@ -74,13 +84,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#id")
-    public void changeActiveStatus(Long id, Boolean active) {
+    public void delete(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found with id: " + id);
         }
 
-        userRepository.updateActive(id, active);
+        userRepository.updateStatus(id, UserStatus.DELETED);
     }
-
 
 }

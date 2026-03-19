@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.userservice.dto.PaymentCardRequestDto;
 import org.example.userservice.dto.UserRequestDto;
+import org.example.userservice.entity.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         userRequestDto.setSurname("Petrov");
         userRequestDto.setBirthDate(LocalDate.of(2000, 5, 12));
         userRequestDto.setEmail("ivan" + System.nanoTime() + "@test.com");
-        userRequestDto.setActive(true);
+        userRequestDto.setStatus(UserStatus.ACTIVE);
     }
 
     @Test
@@ -72,5 +73,46 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value(userId))
                 .andExpect(jsonPath("$[0].holder").value("IVAN PETROV"));
+    }
+
+    @Test
+    void createSixthCard_shouldReturnUnprocessableEntity() throws Exception {
+        String userResponse = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userRequestDto)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = objectMapper.readTree(userResponse).get("id").asLong();
+
+        for (int i = 0; i < 5; i++) {
+            PaymentCardRequestDto dto = new PaymentCardRequestDto();
+            dto.setNumber("11112222333344" + i + i);
+            dto.setHolder("IVAN PETROV");
+            dto.setExpirationDate(LocalDate.of(2030, 12, 31));
+            dto.setActive(true);
+            dto.setUserId(userId);
+
+            mockMvc.perform(post("/api/cards")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isCreated());
+        }
+
+        PaymentCardRequestDto sixthCard = new PaymentCardRequestDto();
+        sixthCard.setNumber("9999888877776666");
+        sixthCard.setHolder("IVAN PETROV");
+        sixthCard.setExpirationDate(LocalDate.of(2030, 12, 31));
+        sixthCard.setActive(true);
+        sixthCard.setUserId(userId);
+
+        mockMvc.perform(post("/api/cards")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sixthCard)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("User cannot have more than 5 cards"));
     }
 }

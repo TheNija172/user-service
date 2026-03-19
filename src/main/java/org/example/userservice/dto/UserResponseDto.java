@@ -1,6 +1,7 @@
 package org.example.userservice.dto;
 
 import lombok.Data;
+import org.example.userservice.entity.UserStatus;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -15,7 +16,7 @@ public class UserResponseDto implements Serializable {
     private String surname;
     private LocalDate birthDate;
     private String email;
-    private Boolean active;
+    private UserStatus status;
     private Instant createdAt;
     private Instant updatedAt;
     private List<PaymentCardResponseDto> cards;

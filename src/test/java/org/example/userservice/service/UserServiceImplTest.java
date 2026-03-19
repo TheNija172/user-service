@@ -3,6 +3,7 @@ package org.example.userservice.service;
 import org.example.userservice.dto.UserRequestDto;
 import org.example.userservice.dto.UserResponseDto;
 import org.example.userservice.entity.User;
+import org.example.userservice.entity.UserStatus;
 import org.example.userservice.exception.ResourceNotFoundException;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.repository.UserRepository;
@@ -12,12 +13,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
@@ -38,7 +46,7 @@ class UserServiceImplTest {
         requestDto.setSurname("Petrov");
         requestDto.setBirthDate(LocalDate.of(2000, 5, 12));
         requestDto.setEmail("ivan@test.com");
-        requestDto.setActive(true);
+        requestDto.setStatus(UserStatus.ACTIVE);
 
         User user = new User();
         User savedUser = new User();
@@ -47,6 +55,7 @@ class UserServiceImplTest {
         UserResponseDto responseDto = new UserResponseDto();
         responseDto.setId(1L);
         responseDto.setName("Ivan");
+        responseDto.setStatus(UserStatus.ACTIVE);
 
         when(userMapper.toEntity(requestDto)).thenReturn(user);
         when(userRepository.save(user)).thenReturn(savedUser);
@@ -65,9 +74,11 @@ class UserServiceImplTest {
     void getById_shouldReturnUser_whenUserExists() {
         User user = new User();
         user.setId(1L);
+        user.setStatus(UserStatus.ACTIVE);
 
         UserResponseDto responseDto = new UserResponseDto();
         responseDto.setId(1L);
+        responseDto.setStatus(UserStatus.ACTIVE);
 
         when(userRepository.findWithCardsById(1L)).thenReturn(Optional.of(user));
         when(userMapper.toDto(user)).thenReturn(responseDto);
@@ -86,13 +97,27 @@ class UserServiceImplTest {
     }
 
     @Test
+    void getById_shouldThrowException_whenUserDeleted() {
+        User user = new User();
+        user.setId(1L);
+        user.setStatus(UserStatus.DELETED);
+
+        when(userRepository.findWithCardsById(1L)).thenReturn(Optional.of(user));
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.getById(1L));
+    }
+
+    @Test
     void getAll_shouldReturnPageOfUsers() {
         Pageable pageable = PageRequest.of(0, 10);
         User user = new User();
+        user.setStatus(UserStatus.ACTIVE);
+
         Page<User> userPage = new PageImpl<>(java.util.List.of(user));
 
         UserResponseDto responseDto = new UserResponseDto();
         responseDto.setId(1L);
+        responseDto.setStatus(UserStatus.ACTIVE);
 
         when(userRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
                 .thenReturn(userPage);
@@ -110,14 +135,16 @@ class UserServiceImplTest {
         requestDto.setSurname("User");
         requestDto.setBirthDate(LocalDate.of(2001, 1, 1));
         requestDto.setEmail("updated@test.com");
-        requestDto.setActive(false);
+        requestDto.setStatus(UserStatus.ACTIVE);
 
         User user = new User();
         user.setId(1L);
+        user.setStatus(UserStatus.ACTIVE);
 
         UserResponseDto responseDto = new UserResponseDto();
         responseDto.setId(1L);
         responseDto.setName("Updated");
+        responseDto.setStatus(UserStatus.ACTIVE);
 
         when(userRepository.findWithCardsById(1L)).thenReturn(Optional.of(user));
         when(userMapper.toDto(user)).thenReturn(responseDto);
@@ -127,24 +154,24 @@ class UserServiceImplTest {
         assertEquals("Updated", user.getName());
         assertEquals("User", user.getSurname());
         assertEquals("updated@test.com", user.getEmail());
-        assertFalse(user.getActive());
+        assertEquals(UserStatus.ACTIVE, user.getStatus());
         assertEquals(1L, result.getId());
     }
 
     @Test
-    void changeActiveStatus_shouldCallRepository_whenUserExists() {
+    void delete_shouldUpdateStatusToDeleted_whenUserExists() {
         when(userRepository.existsById(1L)).thenReturn(true);
 
-        userService.changeActiveStatus(1L, false);
+        userService.delete(1L);
 
-        verify(userRepository).updateActive(1L, false);
+        verify(userRepository).updateStatus(1L, UserStatus.DELETED);
     }
 
     @Test
-    void changeActiveStatus_shouldThrowException_whenUserNotFound() {
+    void delete_shouldThrowException_whenUserNotFound() {
         when(userRepository.existsById(1L)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class,
-                () -> userService.changeActiveStatus(1L, false));
+                () -> userService.delete(1L));
     }
 }

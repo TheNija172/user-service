@@ -4,8 +4,8 @@ import org.example.userservice.dto.PaymentCardRequestDto;
 import org.example.userservice.dto.PaymentCardResponseDto;
 import org.example.userservice.entity.PaymentCard;
 import org.example.userservice.entity.User;
-import org.example.userservice.exception.CardLimitExceededException;
 import org.example.userservice.exception.ResourceNotFoundException;
+import org.example.userservice.exception.UnprocessableEntityException;
 import org.example.userservice.mapper.PaymentCardMapper;
 import org.example.userservice.repository.PaymentCardRepository;
 import org.example.userservice.repository.UserRepository;
@@ -36,14 +36,14 @@ class PaymentCardServiceImplTest {
     @Mock
     private PaymentCardMapper paymentCardMapper;
 
+    @InjectMocks
+    private PaymentCardServiceImpl paymentCardService;
+
     @Mock
     private CacheManager cacheManager;
 
     @Mock
     private Cache cache;
-
-    @InjectMocks
-    private PaymentCardServiceImpl paymentCardService;
 
     @Test
     void create_shouldSaveCard_whenUserExistsAndCardLimitNotExceeded() {
@@ -69,14 +69,12 @@ class PaymentCardServiceImplTest {
         when(paymentCardMapper.toEntity(requestDto)).thenReturn(card);
         when(paymentCardRepository.save(card)).thenReturn(savedCard);
         when(paymentCardMapper.toDto(savedCard)).thenReturn(responseDto);
-        when(cacheManager.getCache("users")).thenReturn(cache);
 
         PaymentCardResponseDto result = paymentCardService.create(requestDto);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
         verify(paymentCardRepository).save(card);
-        verify(cache).evict(1L);
     }
 
     @Test
@@ -101,7 +99,7 @@ class PaymentCardServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(paymentCardRepository.countByUserId(1L)).thenReturn(5L);
 
-        assertThrows(CardLimitExceededException.class,
+        assertThrows(UnprocessableEntityException.class,
                 () -> paymentCardService.create(requestDto));
     }
 
@@ -156,6 +154,5 @@ class PaymentCardServiceImplTest {
         paymentCardService.changeActiveStatus(1L, false);
 
         verify(paymentCardRepository).updateActive(1L, false);
-        verify(cache).evict(1L);
     }
 }

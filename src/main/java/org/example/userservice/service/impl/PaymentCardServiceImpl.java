@@ -4,13 +4,14 @@ import org.example.userservice.dto.PaymentCardRequestDto;
 import org.example.userservice.dto.PaymentCardResponseDto;
 import org.example.userservice.entity.PaymentCard;
 import org.example.userservice.entity.User;
-import org.example.userservice.exception.CardLimitExceededException;
 import org.example.userservice.exception.ResourceNotFoundException;
+import org.example.userservice.exception.UnprocessableEntityException;
 import org.example.userservice.mapper.PaymentCardMapper;
 import org.example.userservice.repository.PaymentCardRepository;
 import org.example.userservice.repository.UserRepository;
 import org.example.userservice.service.PaymentCardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,21 +30,21 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#requestDto.userId")
     public PaymentCardResponseDto create(PaymentCardRequestDto requestDto) {
         User user = userRepository.findById(requestDto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + requestDto.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + requestDto.getUserId()
+                ));
 
-        long cardCount = paymentCardRepository.countByUserId(user.getId());
-        if (cardCount >= 5) {
-            throw new CardLimitExceededException("User cannot have more than 5 cards");
+        if (paymentCardRepository.countByUserId(user.getId()) >= 5) {
+            throw new UnprocessableEntityException("User cannot have more than 5 cards");
         }
 
         PaymentCard paymentCard = paymentCardMapper.toEntity(requestDto);
         paymentCard.setUser(user);
 
         PaymentCard savedCard = paymentCardRepository.save(paymentCard);
-        evictUserCache(user.getId());
-
         return paymentCardMapper.toDto(savedCard);
     }
 
@@ -75,23 +76,21 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#requestDto.userId")
     public PaymentCardResponseDto update(Long id, PaymentCardRequestDto requestDto) {
         PaymentCard paymentCard = paymentCardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
 
-        Long oldUserId = paymentCard.getUser().getId();
-
         User user = userRepository.findById(requestDto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + requestDto.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + requestDto.getUserId()
+                ));
 
         paymentCard.setNumber(requestDto.getNumber());
         paymentCard.setHolder(requestDto.getHolder());
         paymentCard.setExpirationDate(requestDto.getExpirationDate());
         paymentCard.setActive(requestDto.getActive());
         paymentCard.setUser(user);
-
-        evictUserCache(oldUserId);
-        evictUserCache(user.getId());
 
         return paymentCardMapper.toDto(paymentCard);
     }

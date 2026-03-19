@@ -46,12 +46,9 @@ public class UserController {
         return ResponseEntity.ok(userService.update(id, requestDto));
     }
 
-    @PatchMapping("/{id}/active")
-    public ResponseEntity<Void> changeActiveStatus(
-            @PathVariable Long id,
-            @RequestParam Boolean active
-    ) {
-        userService.changeActiveStatus(id, active);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

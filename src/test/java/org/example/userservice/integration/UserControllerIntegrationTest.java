@@ -3,6 +3,7 @@ package org.example.userservice.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.userservice.dto.UserRequestDto;
+import org.example.userservice.entity.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         userRequestDto.setSurname("Petrov");
         userRequestDto.setBirthDate(LocalDate.of(2000, 5, 12));
         userRequestDto.setEmail("ivan" + System.nanoTime() + "@test.com");
-        userRequestDto.setActive(true);
+        userRequestDto.setStatus(UserStatus.ACTIVE);
     }
 
     @Test
@@ -57,7 +58,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(userId))
                 .andExpect(jsonPath("$.name").value("Ivan"))
-                .andExpect(jsonPath("$.surname").value("Petrov"));
+                .andExpect(jsonPath("$.surname").value("Petrov"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test

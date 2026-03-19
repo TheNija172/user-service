@@ -26,7 +26,10 @@ public class User extends BaseEntity {
     private LocalDate birthDate;
 
     private String email;
-    private Boolean active;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private UserStatus status;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentCard> cards;

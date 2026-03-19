@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.example.userservice.entity.UserStatus;
 
 import java.time.LocalDate;
 
@@ -24,5 +25,5 @@ public class UserRequestDto {
     private String email;
 
     @NotNull
-    private Boolean active;
+    private UserStatus status;
 }
